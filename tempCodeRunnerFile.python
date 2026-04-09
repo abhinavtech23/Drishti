@@ -1,0 +1,73 @@
+import cv2
+import pyttsx3
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
+from PIL import Image
+
+# --- 1. SETUP THE AI (Optimized for 8GB RAM) ---
+print("Loading Moondream (Low Memory Mode)...")
+
+model_id = "vikhyatk/moondream2"
+revision = "2024-08-26" 
+
+# Patch the config to prevent crashes
+config = AutoConfig.from_pretrained(
+    model_id, 
+    trust_remote_code=True, 
+    revision=revision
+)
+if getattr(config, 'pad_token_id', None) is None:
+    config.pad_token_id = config.eos_token_id
+
+# LOAD WITH MEMORY OPTIMIZATION
+model = AutoModelForCausalLM.from_pretrained(
+    model_id, 
+    trust_remote_code=True, 
+    revision=revision,
+    config=config,
+    # This line is the magic fix for 8GB RAM:
+    low_cpu_mem_usage=True, 
+    device_map="cpu" 
+)
+
+tokenizer = AutoTokenizer.from_pretrained(model_id, revision=revision)
+
+# --- 2. SETUP THE VOICE ---
+engine = pyttsx3.init()
+engine.setProperty('rate', 150) 
+print("System Ready! Press SPACE to describe.")
+
+# --- 3. SETUP CAMERA ---
+cap = cv2.VideoCapture(1)
+if not cap.isOpened():
+    cap = cv2.VideoCapture(1)
+
+def describe_frame(frame):
+    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    pil_image = Image.fromarray(rgb_frame)
+    
+    print("Thinking...")
+    enc_image = model.encode_image(pil_image)
+    answer = model.answer_question(enc_image, "Describe this scene briefly.", tokenizer)
+    
+    print(f"AI Says: {answer}")
+    engine.say(answer)
+    engine.runAndWait()
+
+# --- 4. MAIN LOOP ---
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        print("Camera error.")
+        break
+        
+    cv2.imshow("Drishti-Vani", frame)
+    
+    key = cv2.waitKey(1)
+    if key == 32: # SPACEBAR
+        describe_frame(frame)
+    elif key == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()

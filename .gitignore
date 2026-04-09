@@ -1,0 +1,9 @@
+.env
+__pycache__/
+*.pyc
+*.mp3
+*.jpg
+*.png
+debug.jpg
+voice.mp3
+temp.jpg
