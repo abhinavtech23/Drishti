@@ -1,0 +1,8 @@
+opencv-python
+pyserial
+requests
+edge-tts
+python-dotenv
+Pillow
+SpeechRecognition
+PyAudio

@@ -7,3 +7,5 @@ __pycache__/
 debug.jpg
 voice.mp3
 temp.jpg
+locations.json
+output.mp3
